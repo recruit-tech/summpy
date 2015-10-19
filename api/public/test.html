@@ -1,0 +1,48 @@
+<html>
+  <head></head>
+  <body>
+    <textarea type="text" name="text" rows="7" cols="70"></textarea>
+    <br>
+    アルゴリズム (lexrank|mcp): <input type="text" value="lexrank" name="algo"/><br>
+    文数制限: <input type="text" value="" name="sent_limit"/><br>
+    文字数制限: <input type="text" value="" name="char_limit"/><br>
+    累積重要度: <input type="text" value="" name="imp_require"/><br>
+    <button id="summarize">summarize</button>
+    <br>
+    <div id="out"></div>
+
+    <script src="http://code.jquery.com/jquery-2.0.3.min.js"></script>
+    <script type="text/javascript">
+$(document).ready(function() {
+  $("#summarize").click(function(e) {
+    var text = $("textarea[name='text']").val();
+    var params = {
+      text: text,
+      algo: $("input[name='algo']").val(),
+      sent_limit: $("input[name='sent_limit']").val(),
+      char_limit: $("input[name='char_limit']").val(),
+      imp_require: $("input[name='imp_require']").val()
+    };
+    $.post("/summarize", params)
+      .done(function(sentences) {
+        var out = $("#out");
+        var summ_length = 0;
+        out.empty();
+        sentences.forEach(function(s) {
+          summ_length += s.length;
+          out.append("<p>" + s + "</p>");
+        });
+        var summ_rate = summ_length / text.length;
+        out.prepend(
+          '<p style="color:blue">'
+          + '要約率: ' + summ_rate
+          + ' (' + summ_length + '/' + text.length + ' 文字)'
+          + '</p>'
+        );
+      });
+  });
+});
+    </script>
+
+  </body>
+</html>
