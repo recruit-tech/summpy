@@ -1,6 +1,9 @@
 #What it is
 Text (sentences) summarization api (python) 
 
+## License
+MIT License (See a License file)
+
 ## Requirements 
 #### Python 2.X
 + numpy
