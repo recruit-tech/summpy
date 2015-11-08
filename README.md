@@ -1,7 +1,7 @@
 # Summpy
 
-Text summarization (sentence extraction) module for Python.
-(Currently summpy supports Japanese only)
+Text summarization (sentence extraction) module with simple HTTP API.
+(Currently supports Japanese only)
 
 ## License
 
