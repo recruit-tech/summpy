@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import math
 import re
 import json
-import subprocess
 
 import MeCab
 
@@ -25,15 +23,7 @@ def tree_encode(obj, encoding='utf-8'):
         return obj
 
 
-def ppj(obj, sort_keys=False):
-    obj_str = json.dumps(
-        tree_encode(obj), indent=2, ensure_ascii=False, sort_keys=sort_keys
-    )
-    print obj_str
-
-
-# ここからmecab関連
-
+# Begin MeCab
 _mecab = MeCab.Tagger()
 # 品詞,品詞細分類1,品詞細分類2,品詞細分類3,活用形,活用型,原形,読み,発音
 _mecab_feat_labels = 'pos cat1 cat2 cat3 conj conj_t orig read pron'.split(' ')
@@ -76,11 +66,11 @@ def not_stopword(n):  # <- mecab node
     return not is_stopword(n)
 
 
-def _node2word(n):  # <- mecab node
+def node2word(n):  # <- mecab node
     return n._surface
 
 
-def _node2norm_word(n):  # mecab node
+def node2norm_word(n):  # mecab node
     if n.feat_dict['orig'] != '*':
         return n.feat_dict['orig']
     else:
@@ -88,7 +78,7 @@ def _node2norm_word(n):  # mecab node
 
 
 def word_segmenter_ja(sent, node_filter=not_stopword,
-                      node2word=_node2norm_word, mecab_encoding='utf-8'):
+                      node2word=node2norm_word, mecab_encoding='utf-8'):
     if type(sent) == unicode:
         sent = sent.encode(mecab_encoding)
 
@@ -156,25 +146,8 @@ def sent_splitter_ja(text, fix_paren=True):  # type(text) == unicode
 
 
 def test_mecab():
-    text = u'今日はいい天気ですね。太郎は今日学校に行こうとしています。'
-    sents = sent_splitter_ja(text)
-    for s in sents:
-        ws = word_segmenter_ja(s)
-        print '|'.join(ws)
-
-
-def l2norm(xs):
-    return math.sqrt(sum(x * x for x in xs))
-
-
-def cos_sim(v1, v2):
-    if len(v1) == 0 or len(v2) == 0:
-        return 0
-    a = 0
-    for k in v1:
-        a += v1[k] * (v2[k] if k in v2 else 0)
-    b = l2norm(v1.values()) * l2norm(v2.values())
-    return a / b
+    text = u'今日はいい天気ですね。'
+    print '|'.join(word_segmenter_ja(text)).encode('utf-8')
 
 
 if __name__ == '__main__':
