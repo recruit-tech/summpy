@@ -79,7 +79,6 @@ pip install path/to/summpy
 ### Example (clexrank)
 
 ```python
-from summpy import tools
 from summpy.lexrank import summarize
 
 # ensure type(text) is unicode
