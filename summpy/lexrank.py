@@ -34,6 +34,12 @@ def lexrank(sentences, continuous=False, sim_threshold=0.1, alpha=0.9):
         },
         similarity_matrix
       )
+    
+    Reference:
+      Günes Erkan and Dragomir R. Radev.
+      LexRank: graph-based lexical centrality as salience in text
+      summarization. (section 3)
+      http://www.cs.cmu.edu/afs/cs/project/jair/pub/volume22/erkan04a-html/erkan04a.html
     '''
     graph = networkx.DiGraph()
 
