@@ -28,7 +28,7 @@ def summarize(text, char_limit, sentence_filter=None):
       http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.222.6945
     '''
 
-    sents = tools.sent_splitter_ja(text)
+    sents = list(tools.sent_splitter_ja(text))
 
     words_list = [
         # pulp variables should be utf-8 encoded

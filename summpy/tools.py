@@ -92,57 +92,39 @@ def word_segmenter_ja(sent, node_filter=not_stopword,
     return words
 
 
-def fix_paren_sents(sents):
+def sent_splitter_ja(text, delimiters=set(u'。．？！\n\r'),
+                     parenthesis=u'（）「」『』“”'):
     '''
-    sent_splitter_jaでは、
-    "太郎は「明日は晴れるだろう。」といった。"
-        -> ["太郎は「明日は晴れるだろう。", "」といった。"]
-    に分割される。
-
-    この関数はカッコの対応を見て、文を境界を修正する。
-    exmaple:
-      sents = ["太郎は「明日は晴れるだろう。", "」といった。"]
-      returns ["太郎は「明日は晴れるだろう。」といった。"]
+    Args:
+      text: unicode string that contains multiple Japanese sentences.
+      delimiters: set() of sentence delimiter characters.
+      parenthesis: to be checked its correspondence.
+    Returns:
+      generator that yields sentences.
     '''
-    # 開いた括弧は必ず閉じる．
-    # 全角（） -> 半角()
-    sents = [s.replace(u'（', u'(').replace(u'）', u')') for s in sents]
-    parenthesis = u'（）「」『』()'
+    paren_chars = set(parenthesis)
     close2open = dict(zip(parenthesis[1::2], parenthesis[0::2]))
-    fixed_sents = []
     pstack = []
-    buff = u''
-    for sent in sents:
-        pattern = re.compile(u'[' + parenthesis + u']')
-        ps = re.findall(pattern, sent)
-        if len(ps) > 0:
-            for p in ps:
-                if p in close2open.values():
-                    # open
-                    pstack.append(p)
-                elif len(pstack) > 0 and pstack[-1] == close2open[p]:
-                    # close
+    buff = []
+
+    for i, c in enumerate(text):
+        c_next = text[i+1] if i+1 < len(text) else None
+        # check correspondence of parenthesis
+        if c in paren_chars:
+            if c in close2open:  # close
+                if pstack[-1] == close2open[c]:
                     pstack.pop()
-        # ここでpstackが空なら括弧の対応がとれている．
-        if len(pstack) == 0:
-            buff += sent
-            if len(buff) > 0:
-                fixed_sents.append(buff)
-            buff = u''
-        else:
-            buff += sent
+            else:  # open
+                pstack.append(c)
+
+        buff.append(c)
+        if c in delimiters:
+            if len(pstack) == 0 and c_next not in delimiters:
+                yield ''.join(buff)
+                buff = []
+
     if len(buff) > 0:
-        fixed_sents.append(buff)
-
-    return fixed_sents
-
-
-def sent_splitter_ja(text, fix_paren=True):  # type(text) == unicode
-    sents = re.sub(ur'([。．？！\n\r]+)', r'\1|', text).split('|')
-    sents = [s for s in sents if len(s) > 0]
-    if fix_paren:
-        sents = fix_paren_sents(sents)
-    return sents
+        yield ''.join(buff)
 
 
 def test_mecab():
