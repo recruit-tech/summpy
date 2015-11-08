@@ -10,45 +10,45 @@ import pulp
 import tools
 
 
-def summarize(text, char_limit, sent_len_min=None):
+def summarize(text, char_limit, sentence_filter=None):
     '''
-    最大被覆問題として要約する．
+    select sentences in terms of maximum coverage problem
 
     Args:
-      text: 要約対象のテキスト (unicode)
-      char_limit: 文字数制限
-      sent_len_min: 長さがこれ以下の文は要約に含めない．
+      text: text to be summarized (unicode string)
+      char_limit: summary length (the number of characters)
 
-    Returns: 要約文のリスト
-      [
-        u'こんにちは．',
-        u'私は飯沼ではありません．',
-        ...
-      ]
+    Returns:
+      list of extracted sentences
+
+    Reference:
+      Hiroya Takamura, Manabu Okumura.
+      Text summarization model based on maximum coverage problem and its
+      variant. (section 3)
+      http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.222.6945
     '''
 
     sents = tools.sent_splitter_ja(text)
 
-    # pulpの変数はutfじゃないといけない
     words_list = [
+        # pulp variables should be utf-8 encoded
         w.encode('utf-8') for s in sents for w in tools.word_segmenter_ja(s)
     ]
-    # 単語の重みを計算 tf (w)
+
     tf = collections.Counter()
     for words in words_list:
         for w in words:
             tf[w] += 1.0
 
-    # 要約に出てきてほしくない文は除外する．
-    if sent_len_min is not None:
-        sents = [s for s in sents if len(s) > sent_len_min]
+    if sentence_filter is not None:
+        valid_indices = [i for i, s in enumerate(sents) if sentence_filter(s)]
+        sents = [sents[i] for i in valid_indices]
+        words_list = [words_list[i] for i in valid_indices]
 
     sent_ids = [str(i) for i in range(len(sents))]  # sentence id
-    # c
-    sent_id2len = dict((id_, len(s)) for id_, s in zip(sent_ids, sents))
+    sent_id2len = dict((id_, len(s)) for id_, s in zip(sent_ids, sents))  # c
 
-    # a: ある単語が文に含まれているか否か
-    word_contain = dict()
+    word_contain = dict()  # a
     for id_, words in zip(sent_ids, words_list):
         word_contain[id_] = collections.defaultdict(lambda: 0)
         for w in words:
@@ -56,21 +56,20 @@ def summarize(text, char_limit, sent_len_min=None):
 
     prob = pulp.LpProblem('summarize', pulp.LpMaximize)
 
-    # 変数を設定
     # x
     sent_vars = pulp.LpVariable.dicts('sents', sent_ids, 0, 1, pulp.LpBinary)
     # z
     word_vars = pulp.LpVariable.dicts('words', tf.keys(), 0, 1, pulp.LpBinary)
 
-    # 最初に目的関数を追加する。sum(w*z)
+    # first, set objective function: sum(w*z)
     prob += pulp.lpSum([tf[w] * word_vars[w] for w in tf])
 
-    # 次に制約を追加していく。
-    # sum(c*x) <= K
+    # next, add constraints
+    # limit summary length: sum(c*x) <= K
     prob += pulp.lpSum(
         [sent_id2len[id_] * sent_vars[id_] for id_ in sent_ids]
     ) <= char_limit, 'lengthRequirement'
-    # sum(a*x) <= z, すべての単語について
+    # for each term, sum(a*x) <= z
     for w in tf:
         prob += pulp.lpSum(
             [word_contain[id_][w] * sent_vars[id_] for id_ in sent_ids]
@@ -92,7 +91,12 @@ if __name__ == '__main__':
 
     _usage = '''
 Usage:
-    python mcp_summ.py -f <file_name> -c <文字数制限>
+  python mcp_summ.py -f <file_name> [ -e <encoding> ] -c <char_limit>
+
+  Args:
+    file_name: plain text file to be summarized
+    encoding: input and output encoding (default: utf-8)
+    char_limit: summary length (the number of charactors)
     '''.strip()
 
     options, args = getopt.getopt(sys.argv[1:], 'f:c:')
@@ -103,15 +107,19 @@ Usage:
         sys.exit(0)
 
     fname = options['-f']
+    encoding = optoin['-e'] if '-e' in options else 'utf-8'
     char_limit = int(options['-c']) if '-c' in options else None
 
     if fname == 'stdin':
-        text, line = '', ''
-        while line != 'EOS':
-            line = raw_input().decode('utf-8')
-            text += line + '\n'
+        text = '\n'.join(
+            line for line in sys.stdin.readlines()
+        ).decode(encoding)
     else:
-        text = codecs.open(fname, encoding='utf-8').read()
+        text = codecs.open(fname, encoding=encoding).read()
+
+    # example sentence filter
+    #not_too_short = lambda s: True if len(s) > 20 else False
 
     for sent in summarize(text, char_limit=char_limit):
-        print sent.encode('utf-8')
+                          #sentence_filter=not_too_short):
+        print sent.encode(encoding)
