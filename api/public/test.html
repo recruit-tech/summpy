@@ -1,12 +1,14 @@
 <html>
-  <head></head>
+  <head>
+    <meta charset="UTF-8"> 
+  </head>
   <body>
     <textarea type="text" name="text" rows="7" cols="70"></textarea>
     <br>
-    アルゴリズム (lexrank|mcp): <input type="text" value="lexrank" name="algo"/><br>
-    文数制限: <input type="text" value="" name="sent_limit"/><br>
-    文字数制限: <input type="text" value="" name="char_limit"/><br>
-    累積重要度: <input type="text" value="" name="imp_require"/><br>
+    algorithm (lexrank|clexrank|mcp): <input type="text" value="lexrank" name="algo"/><br>
+    length (the number of sentences): <input type="text" value="" name="sent_limit"/><br>
+    length (the number of chars): <input type="text" value="" name="char_limit"/><br>
+    cumulative LexRank score: <input type="text" value="" name="imp_require"/><br>
     <button id="summarize">summarize</button>
     <br>
     <div id="out"></div>
@@ -21,10 +23,13 @@ $(document).ready(function() {
       algo: $("input[name='algo']").val(),
       sent_limit: $("input[name='sent_limit']").val(),
       char_limit: $("input[name='char_limit']").val(),
-      imp_require: $("input[name='imp_require']").val()
+      imp_require: $("input[name='imp_require']").val(),
+      debug: true
     };
     $.post("/summarize", params)
-      .done(function(sentences) {
+      .done(function(res) {
+        var sentences = res.summary;
+        var debug_info = res.debug_info;
         var out = $("#out");
         var summ_length = 0;
         out.empty();

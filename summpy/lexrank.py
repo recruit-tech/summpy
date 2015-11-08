@@ -74,7 +74,7 @@ def lexrank(sentences, continuous=False, sim_threshold=0.1, alpha=0.9):
 
 
 def summarize(text, sent_limit=None, char_limit=None, imp_require=None,
-              lexrank_params={}):
+              debug=False, **lexrank_params):
     '''
     Args:
       text: text to be summarized (unicode string)
@@ -85,6 +85,7 @@ def summarize(text, sent_limit=None, char_limit=None, imp_require=None,
     Returns:
       list of extracted sentences
     '''
+    debug_info = {}
     sentences = list(tools.sent_splitter_ja(text))
     scores, sim_mat = lexrank(sentences, **lexrank_params)
     sum_scores = sum(scores.itervalues())
@@ -108,7 +109,12 @@ def summarize(text, sent_limit=None, char_limit=None, imp_require=None,
     else:
         summary_sents = sentences
 
-    return summary_sents
+    if debug:
+        debug_info.update({
+            'sentences': sentences, 'scores': scores
+        })
+
+    return summary_sents, debug_info
 
 
 if __name__ == '__main__':
@@ -145,6 +151,9 @@ Usage:
     else:
         text = codecs.open(fname, encoding=encoding).read()
 
-    for sent in summarize(text, sent_limit=sent_limit, char_limit=char_limit,
-                          imp_require=imp_require):
-        print sent.encode(encoding)
+    sentences, debug_info = summarize(
+        text, sent_limit=sent_limit, char_limit=char_limit,
+        imp_require=imp_require
+    )
+    for sent in sentences:
+        print sent.strip().encode(encoding)

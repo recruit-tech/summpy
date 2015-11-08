@@ -10,7 +10,7 @@ import pulp
 import tools
 
 
-def summarize(text, char_limit, sentence_filter=None):
+def summarize(text, char_limit, sentence_filter=None, debug=False):
     '''
     select sentences in terms of maximum coverage problem
 
@@ -27,9 +27,9 @@ def summarize(text, char_limit, sentence_filter=None):
       variant. (section 3)
       http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.222.6945
     '''
+    debug_info = {}
 
     sents = list(tools.sent_splitter_ja(text))
-
     words_list = [
         # pulp variables should be utf-8 encoded
         w.encode('utf-8') for s in sents for w in tools.word_segmenter_ja(s)
@@ -84,7 +84,7 @@ def summarize(text, char_limit, sentence_filter=None):
         if v.name.startswith('sents') and v.varValue == 1:
             sent_indices.append(int(v.name.split('_')[-1]))
 
-    return [sents[i] for i in sent_indices]
+    return [sents[i] for i in sent_indices], debug_info
 
 
 if __name__ == '__main__':
@@ -120,6 +120,7 @@ Usage:
     # example sentence filter
     #not_too_short = lambda s: True if len(s) > 20 else False
 
-    for sent in summarize(text, char_limit=char_limit):
-                          #sentence_filter=not_too_short):
-        print sent.encode(encoding)
+    sentences, debug_info = summarize(text, char_limit=char_limit)
+                                      #sentence_filter=not_too_short)
+    for sent in sentences:
+        print sent.strip().encode(encoding)
