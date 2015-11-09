@@ -15,7 +15,7 @@ MIT License (See a License file)
 + networkx
 + scikit-learn
 + cherrypy
-+ MeCab
++ MeCab or janome
 + pulp (if you use 'algo=mcp')
 
 ## Quick start
