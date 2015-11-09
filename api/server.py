@@ -39,6 +39,7 @@ class Summarizer(object):
           algo: summarizaion algorithm
               - 'lexrank' (default) graph-based
               - 'clexrank' Continuous LexRank
+              - 'divrank' DivRank (Diverse Rank)
               - 'mcp' select sentences in terms of maximum coverage problem
 
           summarizer_params examples:
@@ -64,10 +65,12 @@ class Summarizer(object):
                     value = False
                 summarizer_params[param] = value
 
-            if algo in ('lexrank', 'clexrank'):
+            if algo in ('lexrank', 'clexrank', 'divrank'):
                 summarizer = self.get_summarizer('lexrank')
                 if algo == 'clexrank':
                     summarizer_params['continuous'] = True
+                if algo == 'divrank':
+                    summarizer_params['use_divrank'] = True
             elif algo == 'mcp':
                 summarizer = self.get_summarizer('mcp')
 

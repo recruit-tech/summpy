@@ -11,9 +11,11 @@ from sklearn.feature_extraction import DictVectorizer
 from sklearn.metrics import pairwise_distances
 
 import tools
+from misc.divrank import divrank, divrank_scipy
 
 
-def lexrank(sentences, continuous=False, sim_threshold=0.1, alpha=0.9):
+def lexrank(sentences, continuous=False, sim_threshold=0.1, alpha=0.9,
+            use_divrank=False, divrank_alpha=0.25):
     '''
     compute centrality score of sentences.
 
@@ -22,7 +24,10 @@ def lexrank(sentences, continuous=False, sim_threshold=0.1, alpha=0.9):
       continuous: if True, apply continuous LexRank. (see reference)
       sim_threshold: if continuous is False and smilarity is greater or
         equal to sim_threshold, link the sentences.
-      alpha: the damping factor of PageRank
+      alpha: the damping factor of PageRank and DivRank
+      divrank: if True, apply DivRank instead of PageRank
+      divrank_alpha: strength of self-link [0.0-1.0]
+        (it's not the damping factor, see divrank.py)
 
     Returns: tuple
       (
@@ -41,6 +46,16 @@ def lexrank(sentences, continuous=False, sim_threshold=0.1, alpha=0.9):
       summarization. (section 3)
       http://www.cs.cmu.edu/afs/cs/project/jair/pub/volume22/erkan04a-html/erkan04a.html
     '''
+    # configure ranker
+    ranker_params = {'max_iter': 1000}
+    if use_divrank:
+        ranker = divrank_scipy
+        ranker_params['alpha'] = divrank_alpha
+        ranker_params['d'] = alpha
+    else:
+        ranker = networkx.pagerank_scipy
+        ranker_params['alpha'] = alpha
+
     graph = networkx.DiGraph()
 
     # sentence -> tf
@@ -69,7 +84,7 @@ def lexrank(sentences, continuous=False, sim_threshold=0.1, alpha=0.9):
         weight = sim_mat[i,j] if continuous else 1.0
         graph.add_edge(i, j, {'weight': weight})
 
-    scores = networkx.pagerank_scipy(graph, alpha=alpha, max_iter=1000)
+    scores = ranker(graph, **ranker_params)
     return scores, sim_mat
 
 
@@ -122,16 +137,18 @@ if __name__ == '__main__':
     _usage = '''
 Usage:
   python lexrank.py -f <file_name> [-e <encoding> ]
+                  [ -v lexrank | clexrank | divrank ]
                   [ -s <sent_limit> | -c <char_limit> | -i <imp_required> ]
   Args:
-    file_name: plain text file to be summarized
-    encoding: input and output encoding (default: utf-8)
-    sent_limit: summary length (the number of sentences)
-    char_limit: summary length (the number of charactors)
-    imp_required: cumulative LexRank score [0.0-1.0]
+    -f: plain text file to be summarized
+    -e: input and output encoding (default: utf-8)
+    -v: variant of LexRank (default is 'lexrank')
+    -s: summary length (the number of sentences)
+    -c: summary length (the number of charactors)
+    -i: cumulative LexRank score [0.0-1.0]
     '''.strip()
 
-    options, args = getopt.getopt(sys.argv[1:], 'f:e:s:c:i:')
+    options, args = getopt.getopt(sys.argv[1:], 'f:e:v:s:c:i:')
     options = dict(options)
 
     if len(options) < 2:
@@ -139,7 +156,8 @@ Usage:
         sys.exit(0)
 
     fname = options['-f']
-    encoding = optoin['-e'] if '-e' in options else 'utf-8'
+    encoding = options['-e'] if '-e' in options else 'utf-8'
+    variant = options['-v'] if '-v' in options else 'lexrank'
     sent_limit = int(options['-s']) if '-s' in options else None
     char_limit = int(options['-c']) if '-c' in options else None
     imp_require = float(options['-i']) if '-i' in options else None
@@ -151,9 +169,15 @@ Usage:
     else:
         text = codecs.open(fname, encoding=encoding).read()
 
+    lexrank_params = {}
+    if variant == 'clexrank':
+        lexrank_params['continuous'] = True
+    if variant == 'divrank':
+        lexrank_params['use_divrank'] = True
+
     sentences, debug_info = summarize(
         text, sent_limit=sent_limit, char_limit=char_limit,
-        imp_require=imp_require
+        imp_require=imp_require, **lexrank_params
     )
     for sent in sentences:
         print sent.strip().encode(encoding)
