@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import math
 import re
 import json
-import subprocess
 
 import MeCab
 
@@ -25,15 +23,7 @@ def tree_encode(obj, encoding='utf-8'):
         return obj
 
 
-def ppj(obj, sort_keys=False):
-    obj_str = json.dumps(
-        tree_encode(obj), indent=2, ensure_ascii=False, sort_keys=sort_keys
-    )
-    print obj_str
-
-
-# ここからmecab関連
-
+# Begin MeCab
 _mecab = MeCab.Tagger()
 # 品詞,品詞細分類1,品詞細分類2,品詞細分類3,活用形,活用型,原形,読み,発音
 _mecab_feat_labels = 'pos cat1 cat2 cat3 conj conj_t orig read pron'.split(' ')
@@ -76,11 +66,11 @@ def not_stopword(n):  # <- mecab node
     return not is_stopword(n)
 
 
-def _node2word(n):  # <- mecab node
+def node2word(n):  # <- mecab node
     return n._surface
 
 
-def _node2norm_word(n):  # mecab node
+def node2norm_word(n):  # mecab node
     if n.feat_dict['orig'] != '*':
         return n.feat_dict['orig']
     else:
@@ -88,7 +78,7 @@ def _node2norm_word(n):  # mecab node
 
 
 def word_segmenter_ja(sent, node_filter=not_stopword,
-                      node2word=_node2norm_word, mecab_encoding='utf-8'):
+                      node2word=node2norm_word, mecab_encoding='utf-8'):
     if type(sent) == unicode:
         sent = sent.encode(mecab_encoding)
 
@@ -102,79 +92,44 @@ def word_segmenter_ja(sent, node_filter=not_stopword,
     return words
 
 
-def fix_paren_sents(sents):
+def sent_splitter_ja(text, delimiters=set(u'。．？！\n\r'),
+                     parenthesis=u'（）「」『』“”'):
     '''
-    sent_splitter_jaでは、
-    "太郎は「明日は晴れるだろう。」といった。"
-        -> ["太郎は「明日は晴れるだろう。", "」といった。"]
-    に分割される。
-
-    この関数はカッコの対応を見て、文を境界を修正する。
-    exmaple:
-      sents = ["太郎は「明日は晴れるだろう。", "」といった。"]
-      returns ["太郎は「明日は晴れるだろう。」といった。"]
+    Args:
+      text: unicode string that contains multiple Japanese sentences.
+      delimiters: set() of sentence delimiter characters.
+      parenthesis: to be checked its correspondence.
+    Returns:
+      generator that yields sentences.
     '''
-    # 開いた括弧は必ず閉じる．
-    # 全角（） -> 半角()
-    sents = [s.replace(u'（', u'(').replace(u'）', u')') for s in sents]
-    parenthesis = u'（）「」『』()'
+    paren_chars = set(parenthesis)
     close2open = dict(zip(parenthesis[1::2], parenthesis[0::2]))
-    fixed_sents = []
     pstack = []
-    buff = u''
-    for sent in sents:
-        pattern = re.compile(u'[' + parenthesis + u']')
-        ps = re.findall(pattern, sent)
-        if len(ps) > 0:
-            for p in ps:
-                if p in close2open.values():
-                    # open
-                    pstack.append(p)
-                elif len(pstack) > 0 and pstack[-1] == close2open[p]:
-                    # close
+    buff = []
+
+    for i, c in enumerate(text):
+        c_next = text[i+1] if i+1 < len(text) else None
+        # check correspondence of parenthesis
+        if c in paren_chars:
+            if c in close2open:  # close
+                if pstack[-1] == close2open[c]:
                     pstack.pop()
-        # ここでpstackが空なら括弧の対応がとれている．
-        if len(pstack) == 0:
-            buff += sent
-            if len(buff) > 0:
-                fixed_sents.append(buff)
-            buff = u''
-        else:
-            buff += sent
+            else:  # open
+                pstack.append(c)
+
+        buff.append(c)
+        if c in delimiters:
+            if len(pstack) == 0 and c_next not in delimiters:
+                yield ''.join(buff)
+                buff = []
+
     if len(buff) > 0:
-        fixed_sents.append(buff)
-
-    return fixed_sents
-
-
-def sent_splitter_ja(text, fix_paren=True):  # type(text) == unicode
-    sents = re.sub(ur'([。．？！\n\r]+)', r'\1|', text).split('|')
-    sents = [s for s in sents if len(s) > 0]
-    if fix_paren:
-        sents = fix_paren_sents(sents)
-    return sents
+        yield ''.join(buff)
 
 
 def test_mecab():
-    text = u'今日はいい天気ですね。太郎は今日学校に行こうとしています。'
-    sents = sent_splitter_ja(text)
-    for s in sents:
-        ws = word_segmenter_ja(s)
-        print '|'.join(ws)
-
-
-def l2norm(xs):
-    return math.sqrt(sum(x * x for x in xs))
-
-
-def cos_sim(v1, v2):
-    if len(v1) == 0 or len(v2) == 0:
-        return 0
-    a = 0
-    for k in v1:
-        a += v1[k] * (v2[k] if k in v2 else 0)
-    b = l2norm(v1.values()) * l2norm(v2.values())
-    return a / b
+    text = u'今日はいい天気ですね。'
+    print '|'.join(word_segmenter_ja(text)).encode('utf-8')
 
 
 if __name__ == '__main__':
