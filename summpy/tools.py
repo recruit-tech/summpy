@@ -42,7 +42,7 @@ def sent_splitter_ja(text, delimiters=set(u'。．？！\n\r'),
         # check correspondence of parenthesis
         if c in paren_chars:
             if c in close2open:  # close
-                if pstack[-1] == close2open[c]:
+                if len(pstack) > 0 and pstack[-1] == close2open[c]:
                     pstack.pop()
             else:  # open
                 pstack.append(c)
