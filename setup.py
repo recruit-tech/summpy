@@ -16,7 +16,7 @@ setup(
     version='0.2',
     description='Text summarization (sentence extraction) module. (currently, support Japanese only)',
     long_description=long_description,
-    packages=['summpy'],
+    packages=['summpy', 'summpy.misc'],
     classifiers=[
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
