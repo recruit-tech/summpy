@@ -33,7 +33,7 @@ curl http://localhost:8080/summarize\?sent_limit\=3\&text\=要約したい文章
 - `algo`: (optional)
   + `lexrank`: LexRank, a graph-based summarization (default)
   + `clexrank`: Continuous LexRank
-  + `divrank`: DivRank (Diverse Rank, graph-based method)
+  + `divrank`: (experimental) DivRank (Diverse Rank, graph-based method). Since DivRank aims to provide non-redundant and high coverage information, it is suitable for multi-document summarization.
   + `mcp`: ILP-based method. Extracts sentences in terms of Maximum Coverage Problem.
 
 Hyper parameters for how many sentences are shown (optional) 
