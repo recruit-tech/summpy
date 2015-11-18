@@ -1,6 +1,0 @@
-numpy
-networkx
-scikit-learn
-pulp
-cherrypy
-MeCab

@@ -10,8 +10,8 @@ import networkx
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.metrics import pairwise_distances
 
-import tools
-from misc.divrank import divrank, divrank_scipy
+from . import tools
+from .misc.divrank import divrank, divrank_scipy
 
 
 def lexrank(sentences, continuous=False, sim_threshold=0.1, alpha=0.9,

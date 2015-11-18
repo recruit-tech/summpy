@@ -8,7 +8,7 @@ import getopt
 import cherrypy
 import json
 
-from summpy import tools
+from . import tools
 
 
 class Summarizer(object):
@@ -23,10 +23,10 @@ class Summarizer(object):
         if name in self.summarizers:
             pass
         elif name == 'lexrank':
-            from summpy import lexrank
+            from . import lexrank
             self.summarizers[name] = lexrank.summarize
         elif name == 'mcp':
-            from summpy import mcp_summ
+            from . import mcp_summ
             self.summarizers[name] = mcp_summ.summarize
 
         return self.summarizers[name]
@@ -111,7 +111,7 @@ if __name__ == '__main__':
         },
         '/static': {
             'tools.staticdir.on': True,
-            'tools.staticdir.dir': './public'
+            'tools.staticdir.dir': './server_data'
         }
     }
     cherrypy.quickstart(Summarizer(), '/', conf)

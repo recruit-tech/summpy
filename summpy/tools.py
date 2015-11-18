@@ -58,12 +58,12 @@ def sent_splitter_ja(text, delimiters=set(u'。．？！\n\r'),
 
 
 if os.environ.get('SUMMPY_USE_JANOME') is not None:
-    from misc.janome_segmenter import word_segmenter_ja
+    from .misc.janome_segmenter import word_segmenter_ja
 else:
     try:
-        from misc.mecab_segmenter import word_segmenter_ja
+        from .misc.mecab_segmenter import word_segmenter_ja
     except ImportError:
-        from misc.janome_segmenter import word_segmenter_ja
+        from .misc.janome_segmenter import word_segmenter_ja
 
 
 if __name__ == '__main__':

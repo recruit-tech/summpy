@@ -7,7 +7,7 @@ import codecs
 import collections
 import pulp
 
-import tools
+from . import tools
 
 
 def summarize(text, char_limit, sentence_filter=None, debug=False):
