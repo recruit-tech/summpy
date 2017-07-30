@@ -150,9 +150,15 @@ def summarize_yans2017(text, sent_limit=None, char_limit=None, imp_require=None,
 
     # moving average 
     scores2 = scores.values()
-    for i in range(1, len(scores)):
-        scores[i] = (scores2[i]+scores2[i-1])/2
-    
+    min_loc = np.where(scores2 == np.min(scores2))[0]
+    pre_score = 0
+    for i in range(0, len(scores)):
+        if i not in min_loc:
+            if pre_score>0:
+                scores[i] = (scores2[i]+pre_score)/2
+            elif pre_score==0:
+                scores[i] = scores2[i]
+            pre_score = scores2[i]
     sum_scores = sum(scores.itervalues())
     acc_scores = 0.0
     indexes = set()
