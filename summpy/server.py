@@ -25,6 +25,9 @@ class Summarizer(object):
         elif name == 'lexrank':
             from . import lexrank
             self.summarizers[name] = lexrank.summarize
+        elif name == 'lexrank_yans2017':
+            from . import lexrank
+            self.summarizers[name] = lexrank.summarize_yans2017
         elif name == 'mcp':
             from . import mcp_summ
             self.summarizers[name] = mcp_summ.summarize
@@ -73,7 +76,8 @@ class Summarizer(object):
                     summarizer_params['use_divrank'] = True
             elif algo == 'mcp':
                 summarizer = self.get_summarizer('mcp')
-
+            elif algo == 'lexrank_yans2017':
+                summarizer = self.get_summarizer('lexrank_yans2017')
             summary, debug_info = summarizer(text, **summarizer_params)
 
         except Exception, e:

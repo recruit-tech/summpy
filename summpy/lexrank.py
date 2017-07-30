@@ -5,7 +5,7 @@ import sys
 import getopt
 import codecs
 import collections
-import numpy
+import numpy as np
 import networkx
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.metrics import pairwise_distances
@@ -72,9 +72,9 @@ def lexrank(sentences, continuous=False, sim_threshold=0.1, alpha=0.9,
     sim_mat = 1 - pairwise_distances(sent_vecs, sent_vecs, metric='cosine')
 
     if continuous:
-        linked_rows, linked_cols = numpy.where(sim_mat > 0)
+        linked_rows, linked_cols = np.where(sim_mat > 0)
     else:
-        linked_rows, linked_cols = numpy.where(sim_mat >= sim_threshold)
+        linked_rows, linked_cols = np.where(sim_mat >= sim_threshold)
 
     # create similarity graph
     graph.add_nodes_from(range(sent_vecs.shape[0]))
@@ -131,6 +131,55 @@ def summarize(text, sent_limit=None, char_limit=None, imp_require=None,
 
     return summary_sents, debug_info
 
+
+def summarize_yans2017(text, sent_limit=None, char_limit=None, imp_require=None,
+              debug=False, **lexrank_params):
+    '''
+    Args:
+      text: text to be summarized (unicode string)
+      sent_limit: summary length (the number of sentences)
+      char_limit: summary length (the number of characters)
+      imp_require: cumulative LexRank score [0.0-1.0]
+
+    Returns:
+      list of extracted sentences
+    '''
+    debug_info = {}
+    sentences = list(tools.sent_splitter_ja(text, parenthesis=u''))
+    scores, sim_mat = lexrank(sentences, **lexrank_params)
+
+    # moving average 
+    scores2 = scores.values()
+    for i in range(1, len(scores)):
+        scores[i] = (scores2[i]+scores2[i-1])/2
+    
+    sum_scores = sum(scores.itervalues())
+    acc_scores = 0.0
+    indexes = set()
+    num_sent, num_char = 0, 0
+    for i in sorted(scores, key=lambda i: scores[i], reverse=True):
+        num_sent += 1
+        num_char += len(sentences[i])
+        if sent_limit is not None and num_sent > sent_limit:
+            break
+        if char_limit is not None and num_char > char_limit:
+            break
+        if imp_require is not None and acc_scores / sum_scores >= imp_require:
+            break
+        indexes.add(i)
+        acc_scores += scores[i]
+
+    if len(indexes) > 0:
+        summary_sents = [sentences[i] for i in sorted(indexes)]
+    else:
+        summary_sents = sentences
+
+    if debug:
+        debug_info.update({
+            'sentences': sentences, 'scores': scores
+        })
+
+    return summary_sents, debug_info
 
 if __name__ == '__main__':
 
