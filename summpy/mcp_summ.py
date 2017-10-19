@@ -107,7 +107,7 @@ Usage:
         sys.exit(0)
 
     fname = options['-f']
-    encoding = optoin['-e'] if '-e' in options else 'utf-8'
+    encoding = options['-e'] if '-e' in options else 'utf-8'
     char_limit = int(options['-c']) if '-c' in options else None
 
     if fname == 'stdin':
